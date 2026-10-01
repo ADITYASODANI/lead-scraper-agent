@@ -14,8 +14,10 @@ import {
   Sparkles,
   Send,
   Save,
+  Search,
 } from "lucide-react";
 import { getPrototypeRenderUrl } from "../services/api";
+import { getGoogleLinks } from "../services/googleLinks";
 
 export default function LeadDetailModal({
   lead,
@@ -68,6 +70,24 @@ export default function LeadDetailModal({
           </div>
 
           <div className="flex items-center gap-2">
+            <a
+              href={getGoogleLinks(lead).search}
+              target="_blank"
+              rel="noreferrer"
+              title="See photos, menu & reviews on Google"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-sky-600/20 hover:bg-sky-600/30 text-sky-300 border border-sky-500/30 text-xs font-semibold transition"
+            >
+              <Search className="w-3.5 h-3.5" /> Google
+            </a>
+            <a
+              href={getGoogleLinks(lead).maps}
+              target="_blank"
+              rel="noreferrer"
+              title="Open on Google Maps"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/30 text-xs font-semibold transition"
+            >
+              <MapPin className="w-3.5 h-3.5" /> Maps
+            </a>
             {lead.has_prototype && (
               <button
                 onClick={() => onOpenPreview(lead.id)}

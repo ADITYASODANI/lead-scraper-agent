@@ -10,6 +10,7 @@ import re
 from typing import Optional, Dict, Any
 import httpx
 from app.config import get_settings
+from app.services.mock_site_copy import build_mock_website_copy
 
 logger = logging.getLogger(__name__)
 
@@ -201,81 +202,7 @@ class LLMClient:
 
         # Intent 3: Website Generation
         if "generate" in lower_prompt and ("website" in lower_prompt or "prototype" in lower_prompt):
-            return {
-                "site_title": f"{business_name} | Premium {category} in {location}",
-                "tagline": f"Excellence & Trusted Quality {category} Services in {location}",
-                "color_scheme": {
-                    "primary": "#2563EB",
-                    "secondary": "#0F172A",
-                    "accent": "#F59E0B",
-                    "background": "#F8FAFC",
-                    "surface": "#FFFFFF",
-                },
-                "hero_section": {
-                    "headline": f"Welcome to {business_name}",
-                    "subheadline": f"Your premier choice for {category.lower()} in {location}. Dedicated to exceptional service, comfort, and reliability.",
-                    "primary_cta": "Contact Us Today",
-                    "secondary_cta": "View Services",
-                },
-                "about_section": {
-                    "title": f"About {business_name}",
-                    "content": f"{business_name} is proud to serve the {location} community with top-tier {category.lower()} offerings. We focus on customer satisfaction, transparent communication, and top quality results.",
-                    "highlights": [
-                        f"Locally operated in {location}",
-                        "Personalized customer attention",
-                        "Experienced & courteous staff",
-                    ],
-                },
-                "services_section": {
-                    "title": "Our Featured Services",
-                    "subtitle": "Tailored solutions designed to meet your everyday needs",
-                    "services": [
-                        {
-                            "name": f"Comprehensive {category} Solutions",
-                            "description": f"Full-range professional service customized to your unique specifications.",
-                            "icon": "Briefcase",
-                        },
-                        {
-                            "name": "Consultation & Guidance",
-                            "description": "Expert advice to help you select the most suitable options for your requirements.",
-                            "icon": "MessageSquare",
-                        },
-                        {
-                            "name": "Priority Customer Care",
-                            "description": "Prompt scheduling and responsive support from inquiry to completion.",
-                            "icon": "ShieldCheck",
-                        },
-                    ],
-                },
-                "why_us_section": {
-                    "title": f"Why Choose {business_name}",
-                    "items": [
-                        "Direct communication with passionate specialists",
-                        "Convenient local access in the heart of " + location,
-                        "Honest recommendations with zero hidden fees",
-                    ],
-                },
-                "gallery_section": {
-                    "title": "Experience Our Space & Craft",
-                    "items": [
-                        {"title": "Dedicated Workspace", "category": "Facilities"},
-                        {"title": "Quality Materials", "category": "Standards"},
-                        {"title": "Welcoming Atmosphere", "category": "Environment"},
-                    ],
-                },
-                "contact_section": {
-                    "title": "Get in Touch With Us",
-                    "address": location,
-                    "phone": phone,
-                    "email": hints.get("email") or f"info@{business_name.lower().replace(' ', '')}.com",
-                    "hours": "Mon - Sat: 9:00 AM - 7:00 PM | Sun: Closed",
-                },
-                "cta_section": {
-                    "heading": "Ready to Experience the Difference?",
-                    "subheading": f"Call us today or visit our location in {location} to get started.",
-                    "button_text": "Call Now",
-                },
-            }
+            return build_mock_website_copy(hints)
 
         # Intent 4: Pitch Generation
         if "pitch" in lower_prompt:

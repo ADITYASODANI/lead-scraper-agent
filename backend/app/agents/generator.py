@@ -7,37 +7,15 @@ grounded strictly in factual business data without fabricated awards or claims.
 from datetime import datetime
 import logging
 from typing import Dict, Any, List, Optional
-from sqlalchemy import select
+from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.agents.base import BaseAgent
 from app.models import Lead, BusinessAnalysis, Opportunity, Prototype
 from app.services.llm_client import LLMClient
 from app.config import get_settings
+from app.services.design_themes import pick_design
 
 logger = logging.getLogger(__name__)
-
-
-# Curated, accessible color palettes by industry category
-INDUSTRY_PALETTES = {
-    "restaurant": {"primary": "#EA580C", "secondary": "#1E293B", "accent": "#F59E0B", "background": "#FFFBEB", "surface": "#FFFFFF"},
-    "cafe": {"primary": "#78350F", "secondary": "#27272A", "accent": "#D97706", "background": "#FDF8F6", "surface": "#FFFFFF"},
-    "salon": {"primary": "#DB2777", "secondary": "#18181B", "accent": "#F43F5E", "background": "#FDF2F8", "surface": "#FFFFFF"},
-    "gym": {"primary": "#DC2626", "secondary": "#09090B", "accent": "#EF4444", "background": "#FAFAFA", "surface": "#FFFFFF"},
-    "clinic": {"primary": "#0284C7", "secondary": "#0F172A", "accent": "#0EA5E9", "background": "#F0F9FF", "surface": "#FFFFFF"},
-    "dental": {"primary": "#0D9488", "secondary": "#134E4A", "accent": "#14B8A6", "background": "#F0FDFA", "surface": "#FFFFFF"},
-    "car service": {"primary": "#2563EB", "secondary": "#1E293B", "accent": "#3B82F6", "background": "#F8FAFC", "surface": "#FFFFFF"},
-    "retail": {"primary": "#4F46E5", "secondary": "#18181B", "accent": "#6366F1", "background": "#F5F3FF", "surface": "#FFFFFF"},
-    "default": {"primary": "#2563EB", "secondary": "#0F172A", "accent": "#3B82F6", "background": "#F8FAFC", "surface": "#FFFFFF"},
-}
-
-
-def get_palette_for_category(category: str) -> Dict[str, str]:
-    """Select appropriate harmonious color scheme for the business category."""
-    cat_lower = category.lower()
-    for key, palette in INDUSTRY_PALETTES.items():
-        if key in cat_lower:
-            return palette
-    return INDUSTRY_PALETTES["default"]
 
 
 class WebsiteGeneratorAgent(BaseAgent):
@@ -71,7 +49,16 @@ class WebsiteGeneratorAgent(BaseAgent):
         opp_stmt = select(Opportunity).where(Opportunity.lead_id == lead.id)
         opp = (await db.execute(opp_stmt)).scalar_one_or_none()
 
-        palette = get_palette_for_category(lead.category)
+        # Unique per-lead visual design (palette, fonts, layout). Keep a lead's
+        # rotation slot on regeneration; new leads take the next slot.
+        existing_cfg = (await db.execute(
+            select(Prototype.full_config).where(Prototype.lead_id == lead.id)
+        )).scalar_one_or_none() or {}
+        design_index = (existing_cfg.get("design") or {}).get("index")
+        if design_index is None:
+            design_index = (await db.execute(select(func.count(Prototype.id)))).scalar_one()
+        design = pick_design(lead.id, lead.category, index=design_index)
+        palette = design["palette"]
 
         # Generate custom structured copy via LLM
         system_prompt = (
@@ -79,6 +66,9 @@ class WebsiteGeneratorAgent(BaseAgent):
             "Generate a complete, modern single-page website prototype structure for this local business. "
             "CRITICAL SAFETY RULE: Do NOT invent fake customer review counts, fake awards, fake years of experience, or fake certifications. "
             "Use only verified business facts and standard professional services suited to their category. "
+            "Make the copy specific to this exact business type and name, never generic: e.g. a cafe or restaurant "
+            "lists signature dishes/drinks as its services (a menu), a salon lists treatments, a gym lists programs. "
+            "Vary tone and wording so no two businesses read alike. "
             "Output strict JSON format."
         )
 
@@ -108,12 +98,14 @@ class WebsiteGeneratorAgent(BaseAgent):
             "location": lead.location,
             "phone": lead.phone,
             "email": lead.email,
+            "variant_seed": lead.id,
+            "variant_index": design_index,
         }
 
         generated = await self.llm_client.generate_json(
             prompt=prompt,
             system_prompt=system_prompt,
-            temperature=0.3,
+            temperature=0.8,
             context_hints=context_hints,
         )
 
@@ -168,6 +160,7 @@ class WebsiteGeneratorAgent(BaseAgent):
             "phone": lead.phone,
             "email": lead.email,
             "color_scheme": palette,
+            "design": design,
             "site_title": site_title,
             "tagline": tagline,
             "hero_section": hero,

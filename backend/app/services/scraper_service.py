@@ -239,6 +239,9 @@ class ScraperService:
                         # Filter out non-business labels
                         if name in ("Results", "Sponsored", "Ad", "Directions", "Website"):
                             continue
+                        # Skip the Maps filter bar (e.g. "PriceRatingHoursAll filters")
+                        if "filters" in name.lower():
+                            continue
 
                         # Extract details from text
                         phone_match = re.search(r"(\+?\d{1,3}[\s-]?)?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}", text)
@@ -251,6 +254,15 @@ class ScraperService:
                             if href and "google.com" not in href:
                                 website = href
 
+                        # Direct Google Maps place link (photos, menu, reviews)
+                        place_url = await elem.get_attribute("href")
+                        if not place_url or "/maps/place/" not in place_url:
+                            place_link = elem.locator('a[href*="/maps/place/"]').first
+                            place_url = (
+                                await place_link.get_attribute("href")
+                                if await place_link.count() > 0 else None
+                            )
+
                         leads.append({
                             "business_name": name,
                             "category": query.title(),
@@ -260,7 +272,7 @@ class ScraperService:
                             "website": website,
                             "description": f"Local {query.lower()} operating in {location}",
                             "social_links": [],
-                            "source_urls": [search_url],
+                            "source_urls": [place_url, search_url] if place_url else [search_url],
                             "place_id": f"gmap_{abs(hash(name + location))}",
                         })
                     except Exception as err:

@@ -10,7 +10,9 @@ import {
   MapPin,
   Clock,
   Sparkles,
+  Search,
 } from "lucide-react";
+import { getGoogleLinks } from "../services/googleLinks";
 
 export default function LeadTable({
   leads = [],
@@ -154,6 +156,24 @@ export default function LeadTable({
                         {lead.phone}
                       </span>
                     )}
+                    <a
+                      href={getGoogleLinks(lead).search}
+                      target="_blank"
+                      rel="noreferrer"
+                      title="See photos, menu & reviews on Google"
+                      className="text-sky-400 hover:underline flex items-center gap-0.5"
+                    >
+                      <Search className="w-2.5 h-2.5" /> Google
+                    </a>
+                    <a
+                      href={getGoogleLinks(lead).maps}
+                      target="_blank"
+                      rel="noreferrer"
+                      title="Open on Google Maps"
+                      className="text-emerald-400 hover:underline flex items-center gap-0.5"
+                    >
+                      <MapPin className="w-2.5 h-2.5" /> Maps
+                    </a>
                     {lead.website && (
                       <a
                         href={lead.website}

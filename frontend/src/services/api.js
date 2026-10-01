@@ -2,7 +2,9 @@
  * Frontend API Service client for Multi-Agent Lead Generation System.
  */
 
-const API_BASE = "http://localhost:8000/api";
+// Relative by default so requests go through the Vite dev-server proxy
+// (same-origin, no CORS). Set VITE_API_BASE to call a backend directly.
+const API_BASE = import.meta.env.VITE_API_BASE || "/api";
 
 export async function fetchStats() {
   const res = await fetch(`${API_BASE}/stats`);

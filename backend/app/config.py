@@ -16,6 +16,14 @@ class Settings(BaseSettings):
     dashboard_url: str = "http://localhost:5173"
     api_prefix: str = "/api"
 
+    # CORS: extra comma-separated origins, plus a regex that by default allows
+    # localhost and private-network IPs on any port (for LAN dashboard access).
+    cors_origins: str = ""
+    cors_origin_regex: str = (
+        r"^https?://(localhost|127\.0\.0\.1|0\.0\.0\.0|10(\.\d{1,3}){3}"
+        r"|192\.168(\.\d{1,3}){2}|172\.(1[6-9]|2\d|3[01])(\.\d{1,3}){2})(:\d+)?$"
+    )
+
     # Database
     database_url: str = "sqlite+aiosqlite:///./leadgen.db"
 
